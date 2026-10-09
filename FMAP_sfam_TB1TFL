@@ -1,0 +1,43 @@
+# Custom python pipeline to determine flip-angle accuracy in sfam_TB1TFL files
+### As suggested by our MRI technitician at the MNI, Ilana R, Leppert
+
+import nibabel as nib
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Load the B1+ map NIfTI file (assumes map values are in degrees or scaling factor applied)
+nii_path = '/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000079/ses-MPN1Scan1/fmap/sub-MPN0000079_ses-MPN1Scan1_acq-sfam_run-1_TB1TFL.nii.gz'
+img = nib.load(nii_path)
+b1_map = img.get_fdata()
+
+# Define the nominal (prescribed) flip angle in degrees (e.g., 60 degrees)
+nominal_fa = 90.0 #### "FlipAngle": 90
+
+# Mask out non-brain/background zero-valued voxels to avoid skewing error metrics
+mask = b1_map > 0
+# 0. Flip_Angle accuracy
+flip_acc = b1_map/(nominal_fa*10)
+
+
+# Quantify summary metrics within the valid mask
+mean_flip_acc = np.mean(flip_acc[mask])*100
+
+print(f'Mean Flip Angle accuracy (%) : {mean_flip_acc}°')
+
+
+# Plotting gradient projections ##
+
+#
+fig, ax = plt.subplots(figsize=(10, 5))
+
+dataZM=np.mean(flip_acc, axis=1)
+
+# Force imshow to fit the unequal aspect ratio and stretch to the custom data limits
+im = ax.imshow(
+    dataZM, 
+    aspect='auto', 
+    cmap='inferno'
+)
+
+fig.colorbar(im, ax=ax)
+plt.show()

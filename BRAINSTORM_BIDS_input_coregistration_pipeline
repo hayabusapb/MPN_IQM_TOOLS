@@ -1,0 +1,205 @@
+
+#  CREATE BRAINSTORM_BIDS STRUCTURE AND SYMLINKS TO MEG AND MRI DATA 
+#  PATHS TO RAW MEG, CBRAIN_BIDS AND MPN_QC DERIVATIVES DATA: 
+#  MEG full directory, MRI structural T1w files and jsons, Head Surfaces from MideFAce 
+# Create a brainstorm participant folder
+
+
+
+cd ~/MOUNT_MPN/
+
+SF=./MPN_QC
+
+for sj in ./MEG/sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/ses-*;do
+       
+       ses='ses-MEG'$(echo "${ssn}" | grep -Po 'ses-\K.*');
+       echo ${ses}
+       mkdir -p -m777 ./MEG_PREP/BRAINSTORM_BIDS/${sid}/${ses}/meg/
+       mkdir -p -m777 ./MEG_PREP/BRAINSTORM_BIDS/${sid}/${ses}/anat/
+       
+       ## Relative symlinks to mount root
+       ln -s "${ssn}"/meg ./MEG_PREP/BRAINSTORM_BIDS/"${sid}"/"${ses}"/meg/      
+       
+       ln -s ./MEG_PREP/"${sid}"_ses-MPN1Scan1_T1w.nii.gz ./MEG_PREP/BRAINSTORM_BIDS/"${sid}"/"${ses}"/anat/"${sid}"_ses-MPN1Scan1_T1w.nii.gz
+       
+       ln -s ./MEG_PREP/"${sid}"_ses-MPN1Scan1_T1w.json ./MEG_PREP/BRAINSTORM_BIDS/"${sid}"/"${ses}"/anat/"${sid}"_ses-MPN1Scan1_T1w.json
+       
+       mkdir -p -m777 ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${ses}/anat/ 
+       cp $SF/${sid}_Anonymized_*MPN1Scan1*/Anonymized_${sid}_ses-MPN1Scan1_T1w/QC/head.surf ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${ses}/anat/
+       
+done        
+done
+
+#
+### ABOVE PROBLEM --> SYMLINKS SEEM TO WORK LOCALLY ONLY IF GIVEN ABSOLUTE PATHS #
+# USE RELATIVE SYMLINK APPROACH
+## BELOW RELATIVE SYMLINK WHEN CALLED FROM PATH ITS CREATED WORKS. (extension need to be nii.gz for it to be recognizable.
+
+cd /BRAINSTORM_BIDS/${sid}/${ses}/anat/
+ln -s ../../../../"${sid}"_ses-MPN1Scan1_T1w.nii.gz test_link7
+
+# NOW CHECK ON MEG DIRECTORY
+cd ../ 
+srt=$(basename ${ssn})
+ln -sr ../../../../MEG/${sid}/${srt}/meg/ .      
+       
+
+###############   REDO LOOP WITH SYMBOLIC LINKS INSTEAD ############ WORKS
+
+cd ~/MOUNT_MPN/
+
+SF=./MPN_QC
+
+for sj in ./MEG/sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/ses-*;do
+       
+       ses='ses-MEG'$(echo "${ssn}" | grep -Po 'ses-\K.*');
+       son=$(basename ${ssn});
+       echo ${ses}
+       mkdir -p -m777 ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${ses}/anat/
+       mkdir -p -m777 ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${ses}/meg/
+       cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${ses}/anat/
+       ln -s ../../../../"${sid}"_ses-MPN1Scan1_T1w.nii.gz "${sid}"_ses-MPN1Scan1_T1w.nii.gz
+       ln -s ../../../../"${sid}"_ses-MPN1Scan1_T1w.json "${sid}"_ses-MPN1Scan1_T1w.json
+       cd ../ 
+       srt=$(basename ${ssn})
+       ln -sr ../../../../MEG/${sid}/${srt}/meg/"${sid}"_"${son}"_task-rest_* ./meg
+       ln -sr ../../../../MEG/${sid}/${srt}/meg/"${sid}"_"${son}"_coordsystem.json ./meg
+       ln -sr ../../../../MEG/${sid}/${srt}/meg/"${sid}"_"${son}"_headshape.pos ./meg
+       
+       mkdir -p -m777 ../../sourcedata/${sid}/${srt}/meg/
+       cd ../../sourcedata/${sid}/${srt}/meg/
+       ln -sr ../../../../../../MEG/${sid}/${son}/meg/"${sid}"_"${son}"_acq* .
+       ln -sr ../../../../../../MEG/${sid}/${srt}/meg/"${sid}"_"${son}"_sessionLog* .
+       
+       cd ~/MOUNT_MPN/
+       mkdir -p -m777 ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${ses}/anat/ 
+       cp -n $SF/${sid}_Anonymized_*MPN1Scan1*/Anonymized_${sid}_ses-MPN1Scan1_T1w/QC/head.surf ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${ses}/anat/
+       cp -n $SF/${sid}_Anonymized_*MPN1Scan1*/Anonymized_${sid}_ses-MPN1Scan1_T1w/QC/anat/head.surf ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${ses}/anat/
+       
+done        
+done
+
+#########
+# AFTER MARK MODIFICATION ADD MEG INFRONT OF SES IN MEG/ ## 18SEP26 #
+
+cd ~/MOUNT_MPN/MEG
+
+
+for sj in ./sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/*;do      
+       sso=$(basename ${ssn});
+       echo ${sso}
+       mkdir -p -m777 ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       #rm "${sid}"_ses-MPN1Scan1_T1w.nii.gz
+       #rm "${sid}"_ses-MPN1Scan1_T1w.json
+       ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan1_T1w.nii.gz "${sid}"_"${sso}"_T1w.nii.gz
+       ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan1_T1w.json "${sid}"_"${sso}"_T1w.json
+       #ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan2_T1w.nii.gz "${sid}"_"${sso}"_T1w.nii.gz
+       #ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan2_T1w.json "${sid}"_"${sso}"_T1w.json
+       echo ${sso}
+       cd ~/MOUNT_MPN/MEG
+done        
+done
+   
+   
+## MANUAL INSERT FOR MN1Scan2
+sid=sub-MPN0000007
+sso=ses-MEG20250208
+cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan2_T1w.nii.gz "${sid}"_"${sso}"_T1w.nii.gz
+ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan2_T1w.json "${sid}"_"${sso}"_T1w.json
+
+
+sid=sub-MPN0000261
+sso=ses-MEG20260825
+cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan1_T1w.nii.gz "${sid}"_"${sso}"_T1w.nii.gz
+ln -sf ../../../../MRI_IN/"${sid}"_ses-MPN1Scan1_T1w.json "${sid}"_"${sso}"_T1w.json
+
+
+  
+################
+# Copy Defaced data to MPN_OPEN/anat  (/data/mpn/MPN_OPNE/anat/  
+  
+cd ~/MOUNT_MPN/MPN_QC  
+for sd in sub*_Anonymized*;do 
+echo ${sd}
+cp ${sd}/*Anonymized*_T1w/*ses-MPN1Scan1_T1w_defaced.nii.gz ~/MOUNT_MPN/MPN_OPEN/Anonymized_anat/
+cp ${sd}/*Anonymized*_T1w/*ses-MPN1Scan2_T1w_defaced.nii.gz ~/MOUNT_MPN/MPN_OPEN/Anonymized_anat/
+done  
+
+###
+# Now add defaced files
+
+cd ~/MOUNT_MPN/MEG
+
+
+for sj in ./sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/*;do      
+       sso=$(basename ${ssn});
+       echo ${sso}
+       mkdir -p -m777 ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       #rm "${sid}"_ses-MPN1Scan1_T1w.nii.gz
+       #rm "${sid}"_ses-MPN1Scan1_T1w.json
+       ln -s ../../../../../MPN_OPEN/Anonymized_anat/"${sid}"_ses-MPN1Scan1_T1w_defaced.nii.gz "${sid}"_"${sso}"_T1w_defaced.nii.gz
+       cp "${sid}"_"${sso}"_T1w.json "${sid}"_"${sso}"_T1w_defaced.json
+       #ln -s ../../../../../MPN_OPEN/Anonymized_anat/"${sid}"_ses-MPN1Scan1_T1w.json "${sid}"_"${sso}"_T1w_defaced.json
+       echo ${sso}
+       cd ~/MOUNT_MPN/MEG
+done        
+done
+
+### Remove DEFACED
+
+cd ~/MOUNT_MPN/MEG
+
+
+for sj in ./sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/*;do      
+       sso=$(basename ${ssn});
+       echo ${sso}
+       mkdir -p -m777 ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       rm "${sid}"_"${sso}"_T1w_defaced.nii.gz
+       rm "${sid}"_"${sso}"_T1w_defaced.json
+       #ln -s ../../../../../MPN_OPEN/Anonymized_anat/"${sid}"_ses-MPN1Scan1_T1w_defaced.nii.gz "${sid}"_"${sso}"_T1w_defaced.nii.gz
+       #cp "${sid}"_"${sso}"_T1w.json "${sid}"_"${sso}"_T1w_defaced.json
+       #ln -s ../../../../../MPN_OPEN/Anonymized_anat/"${sid}"_ses-MPN1Scan1_T1w.json "${sid}"_"${sso}"_T1w_defaced.json
+       echo ${sso}
+       cd ~/MOUNT_MPN/MEG
+done        
+done
+
+##########################  CREATING EXCEL TABLES
+
+
+ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/sub-*/ses-*/anat/*.nii.gz > T1MEG_MPN24Sep26
+ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/sub-*/ses-*/anat/*.nii.gz | xargs -n 1 basename > T1MEG_MPN24Sep26_BASE
+ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/MRI_IN/sub-*_T1w.nii.gz | xargs -n 1 basename > T1MEG_MPN24Sep26_T1w
+ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/MRI_IN/sub-*_T1w.nii.gz | xargs -n 1 basename | grep -Po 'sub-.{10}' > T1MEG_MPN24Sep26_T1wNAME
+
+  

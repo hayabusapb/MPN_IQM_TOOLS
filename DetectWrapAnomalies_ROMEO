@@ -1,0 +1,252 @@
+### Custom python code to detect wrap anomalies in ROMEO phase unwrapped files
+# as proposed by our MRI specialist Dr David Rudko at the MNI 
+# Performs a Gradient projection plot for Wrapped and Unwrapped phase maps
+# and a linear regression test between echo times and mean phases
+# We expect larger echotimes result in smaller negative values of mean unwrapped phase in Rads in the ROMEO derivatives
+
+
+
+ROMEO- Unwrapped_phase_QC_PY.APB_MPNAug26
+#########################################
+
+
+
+import nibabel as nib
+import numpy as np
+import matplotlib.pyplot as plt
+
+## Load wrapped phase volume
+
+IN="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-aspire_echo-1_part-phase_T2starw.nii.gz"
+
+## Load alternatively an unwrapped phase volume
+#IN="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-1_part-phase_T2starw.nii.gz"
+
+img = nib.load(IN)
+data = img.get_fdata()
+
+# Calculate gradient along the z-axis (or 3D spatial gradient)
+grad_z = np.gradient(data, axis=2)
+grad_y = np.gradient(data, axis=1)
+grad_x = np.gradient(data, axis=0)
+
+# Find locations where gradient exceeds pi (indicating a residual wrap/error)
+wrap_errors = np.abs(grad_z) > np.pi
+error_count = np.sum(wrap_errors)
+error_percentage = (error_count / data.size) * 100
+
+print(f"Residual wrap anomalies detected in Z direction: {error_percentage:.4f}%")
+
+wrap_errors = np.abs(grad_y) > np.pi
+error_count = np.sum(wrap_errors)
+error_percentage = (error_count / data.size) * 100
+
+print(f"Residual wrap anomalies detected in Y direction: {error_percentage:.4f}%")
+
+wrap_errors = np.abs(grad_x) > np.pi
+error_count = np.sum(wrap_errors)
+error_percentage = (error_count / data.size) * 100
+
+print(f"Residual wrap anomalies detected in X direction: {error_percentage:.4f}%")
+
+## wrapped -Aspire - part-phase
+#Residual wrap anomalies detected in Z direction: 97.8633%
+#Residual wrap anomalies detected in Y direction: 97.8003%
+#Residual wrap anomalies detected in X direction: 98.0422%
+
+############### After ROMEO unwrapping, echo-wise
+
+##unwrapped -Romeo - part-phase 
+#Residual wrap anomalies detected in Z direction: 1.4166%
+#Residual wrap anomalies detected in Y direction: 0.8788%
+#Residual wrap anomalies detected in X direction: 0.8596%
+
+
+
+### Plotting Gradient projections for Wrapped and Unwrapped phase maps
+#################################################################################
+
+IN="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-aspire_echo-1_part-phase_T2starw.nii.gz"
+
+img = nib.load(IN)
+data = img.get_fdata()
+
+# Plotting gradient projections
+plt.figure(figsize=(10, 5))
+plt.subplot(2, 2, 1)
+dataZM=np.mean(data, axis=2)
+plt.imshow(dataZM, cmap='gray')
+plt.title('Wrapped Phase Map with Z-dimension mean')
+plt.colorbar()
+
+plt.subplot(2, 2, 2)
+gX=np.mean(grad_x, axis=2)
+gY=np.mean(grad_y, axis=2)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_XY')
+plt.colorbar()
+
+plt.subplot(2, 2, 3)
+gX=np.mean(grad_x, axis=1)
+gY=np.mean(grad_y, axis=1)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_XZ')
+plt.colorbar()
+
+
+plt.subplot(2, 2, 4)
+gX=np.mean(grad_x, axis=0)
+gY=np.mean(grad_y, axis=0)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_YZ')
+plt.colorbar()
+
+## Idem Unwrapped (Consider feature detection on a slice-by-slice basis local analysis - pixel-wise curl with CNN?)
+IN="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-1_part-phase_T2starw.nii.gz"
+img = nib.load(IN)
+data = img.get_fdata()
+
+# Calculate gradient along the z-axis (or 3D spatial gradient)
+grad_z = np.gradient(data, axis=2)
+grad_y = np.gradient(data, axis=1)
+grad_x = np.gradient(data, axis=0)
+
+plt.figure(figsize=(10, 5))
+plt.subplot(2, 2, 1)
+dataZM=np.mean(data, axis=2)
+plt.imshow(dataZM, cmap='gray')
+plt.title('Unwrapped Phase Map with Z-dimension mean')
+plt.colorbar()
+
+plt.subplot(2, 2, 2)
+gX=np.mean(grad_x, axis=2)
+gY=np.mean(grad_y, axis=2)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_XY')
+plt.colorbar()
+
+plt.subplot(2, 2, 3)
+gX=np.mean(grad_x, axis=1)
+gY=np.mean(grad_y, axis=1)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_XZ')
+plt.colorbar()
+
+
+plt.subplot(2, 2, 4)
+gX=np.mean(grad_x, axis=0)
+gY=np.mean(grad_y, axis=0)
+plt.imshow(np.hypot(gX, gY), cmap='inferno')
+plt.title('Phase Gradient Magnitude_YZ')
+plt.colorbar()
+
+plt.show()
+
+
+
+#### Linear Regression Test ##########
+######################################
+
+import matplotlib.pyplot as plt
+import nibabel as nib
+import numpy as np
+from scipy.stats import linregress
+
+# 1. Define multi-echo file paths and corresponding TE values (in ms or seconds)
+################################################################################
+## E.g subject MPN87
+
+## echo1:
+E1="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-1_part-phase_T2starw.nii.gz"
+#"EchoTime":0.0045
+#"EchoTime1": 0.0045,
+#"EchoTime2": 0.009,
+#**By default, ROMEO often utilizes the second echo (t=2) as a baseline #template because the first echo (t=1) is frequently corrupted by flow artifacts or incomplete steady-state magnetization.
+
+## echo2:
+E2="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-2_part-phase_T2starw.nii.gz"
+#"EchoTime":0.009
+#"EchoTime1": 0.0045,
+#"EchoTime2": 0.009,
+
+
+# echo3:
+E3="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-3_part-phase_T2starw.nii.gz"
+#"EchoTime": 0.0135
+#"EchoTime1": 0.0045,
+#"EchoTime2": 0.009,
+
+#echo4:
+E4="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-4_part-phase_T2starw.nii.gz"
+#"EchoTime": 0.018
+#"EchoTime1": 0.0045,
+#"EchoTime2": 0.009,
+
+#echo5:
+E5="/home/hayabusa/PROJECT_MPN/MPN_BIDS/sub-MPN0000087/ses-MPN1Scan1/anat/sub-MPN0000087_ses-MPN1Scan1_acq-romeo_echo-5_part-phase_T2starw.nii.gz"
+#"EchoTime": 0.0225,
+#"EchoTime1": 0.0045,
+#"EchoTime2": 0.009,
+#** So EchoTime is EchoTime1*Number_of_Echo
+
+# 2. Set up linear regression and ROI
+#########################################
+
+te_files = {
+    "0.0045": E1,
+    "0.009": E2,
+    "0.0135": E3,
+    "0.018": E4,
+    "0.0225": E5,
+}
+
+te_times = np.array([float(te) for te in te_files.keys()])
+mean_phases = []
+
+for te, filepath in te_files.items():
+  img = nib.load(filepath)
+  data = img.get_fdata()
+
+  # Optional: apply a mask or select a specific slice/ROI coordinates
+  #>>> print(data.shape)
+  # (240, 320, 208)
+  # e.g., using a central ROI slice: data[60:180, 80:240, 52:156]
+  
+  roi_mean = np.mean(data[data != 0])  # simple non-zero mean as placeholder yields similar results
+  
+  roi_mean = np.mean(data[60:180, 80:240, 52:156])
+  mean_phases.append(roi_mean)
+
+mean_phases = np.array(mean_phases)
+
+# 3. Test linearity via Linear Regression
+##########################################
+slope, intercept, r_value, p_value, std_err = linregress(
+    te_times, mean_phases)
+    
+r_squared = r_value**2
+
+print(f"Slope (Frequency proxy): {slope:.4f} rad/ms")
+print(f"R-squared: {r_squared:.4f}")
+print(f"P-value: {p_value:.4e}")
+
+# 4. Plot the evolution and linear fit
+plt.figure(figsize=(7, 5))
+plt.scatter(te_times, mean_phases, color="blue", label="Measured Phase")
+plt.plot(
+    te_times,
+    intercept + slope * te_times,
+    color="red",
+    linestyle="--",
+    label=f"Fit: $R^2$ = {r_squared:.3f}",
+)
+plt.xlabel("Echo Time (TE)")
+plt.ylabel("Unwrapped Phase (radians)")
+plt.title("MRI Phase Evolution vs. Echo Time")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+## Results. In general larger Echotimes result in smaller negative values of mean unwrapped phase in Rads
+
+

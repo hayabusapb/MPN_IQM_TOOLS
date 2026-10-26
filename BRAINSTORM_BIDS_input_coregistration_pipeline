@@ -202,4 +202,38 @@ ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/sub-*/ses-*/anat/*.nii.
 ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/MRI_IN/sub-*_T1w.nii.gz | xargs -n 1 basename > T1MEG_MPN24Sep26_T1w
 ls -aR /home/hayabusa/MOUNT_MPN/MEG_PREP/MRI_IN/sub-*_T1w.nii.gz | xargs -n 1 basename | grep -Po 'sub-.{10}' > T1MEG_MPN24Sep26_T1wNAME
 
-  
+## ADDING FLAIR SYMLINKS FOR SURFACES AND RAW NIFTIES
+
+cd ~/MOUNT_MPN/MEG  
+
+
+for sj in ./sub-*;do
+
+sid=$(echo "${sj}" | grep -Po 'sub-.{10}');
+echo 'processing participant: '${sid}
+
+for ssn in ${sj}/*;do      
+       sso=$(basename ${ssn});
+       echo ${sso} # MEG session
+
+       
+       # LINK SURFACES       
+       # RELATIVE LINK HAVE TO CD IN DESTINATION DIR ALWAYS
+     
+       cd ~/MOUNT_MPN/       
+       for dir in ./MPN_QC/${sid}_Anonymized_ses-MPN1Scan2*; do
+       echo 'This is:' ${dir} 
+       cd ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${sso}/anat/
+       ln -s "../../../../../../../${dir}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR/QC/head.surf" "flair_head.surf"
+       done
+       
+      # # LINK RAW FLAIR NIFTIES
+       cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
+       ln -s "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.nii.gz" "${sid}"_"${sso}"_FLAIR.nii.gz
+       ln -s "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.json" "${sid}"_"${sso}"_FLAIR.json
+       #
+       
+
+done    
+done    
+

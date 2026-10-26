@@ -214,26 +214,42 @@ echo 'processing participant: '${sid}
 
 for ssn in ${sj}/*;do      
        sso=$(basename ${ssn});
-       echo ${sso} # MEG session
+       echo 'This is session: ' ${sso} # MEG session
 
        
        # LINK SURFACES       
        # RELATIVE LINK HAVE TO CD IN DESTINATION DIR ALWAYS
      
        cd ~/MOUNT_MPN/       
-       for dir in ./MPN_QC/${sid}_Anonymized_ses-MPN1Scan2*; do
-       echo 'This is:' ${dir} 
-       cd ./MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${sso}/anat/
-       ln -s "../../../../../../../${dir}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR/QC/head.surf" "flair_head.surf"
+       for dir in ~/MOUNT_MPN/MPN_QC/${sid}_Anonymized_ses-MPN1Scan2*;do
+        sorg=$(basename ${dir})
+       
+       # Check if there is a surface ready
+        if [ -d ${dir}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR ]; then
+         echo 'Working on:' ${dir}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR
+         sorg=$(basename ${dir})
+       
+         ## prepare to create symlink in function existent or replacement needed
+         cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/derivatives/freesurfer/${sid}/${sso}/anat/
+       
+         if [ ! -L "flair_head.surf" ]; then     
+         echo "Symlink is unexistent, creating"
+         ln -s "../../../../../../../MPN_QC/${sorg}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR/QC/head.surf" "flair_head.surf"
+         elif [ -L "flair_head.surf" ]&&[ ! -e "flair_head.surf" ]; then
+         echo "Symlink is broken, replacing"
+         ln -sf "../../../../../../../MPN_QC/${sorg}/Anonymized_${sid}_ses-MPN1Scan2_FLAIR/QC/anat/head.surf" "flair_head.surf"
+         fi
+         cd ~/MOUNT_MPN/
+        fi
+              
        done
        
-      # # LINK RAW FLAIR NIFTIES
+       ### LINK RAW FLAIR NIFTIES
        cd ~/MOUNT_MPN/MEG_PREP/BRAINSTORM_BIDS/${sid}/${sso}/anat/
-       ln -s "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.nii.gz" "${sid}"_"${sso}"_FLAIR.nii.gz
-       ln -s "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.json" "${sid}"_"${sso}"_FLAIR.json
-       #
-       
+       ln -sf "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.nii.gz" "${sid}"_"${sso}"_FLAIR.nii.gz
+       ln -sf "../../../../../CBRAIN_BIDS/${sid}/ses-MPN1Scan2/anat/${sid}_ses-MPN1Scan2_FLAIR.json" "${sid}"_"${sso}"_FLAIR.json
 
 done    
+cd ~/MOUNT_MPN/MEG
 done    
 
